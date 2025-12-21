@@ -32,19 +32,23 @@ if (!mongoURI) {
 
 // 4. REST API Routes
 
-// Test Route
-app.get('/', (req, res) => {
-    res.send('Anime Backend is up and running!');
-});
-
-// GET Route: Fetch all animes (limited to 20)
+// animeBack/server.js
 app.get('/api/animes', async (req, res) => {
-    try {
-        const animes = await Anime.find().limit(20);
-        res.status(200).json(animes);
-    } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message });
+  try {
+    const { search } = req.query;
+    let query = {};
+    
+    if (search && search.trim() !== "") {
+      // Must match the Capital 'Title' in Atlas
+      query.Title = { $regex: search, $options: 'i' }; 
     }
+
+    const animes = await Anime.find(query).limit(20);
+    console.log(`Found ${animes.length} animes`); // Check your terminal for this!
+    res.json(animes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 5. Start Server

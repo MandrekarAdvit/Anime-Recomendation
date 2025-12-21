@@ -1,65 +1,59 @@
 import React from 'react';
 
 const AnimeCard = ({ anime, onSelect, addToWatchlist, removeFromWatchlist, isWatchlisted }) => {
-  // 1. Safety Guard
+  // Safety check to prevent "ReferenceError" or white screen if data is missing
   if (!anime) return null;
 
-  // 2. Data Mapping (MongoDB keys prioritized)
-  const title = anime?.Name || anime?.title || "Untitled";
-  const image = anime?.Image_URL || anime?.image_url || anime?.photo;
+  // Mapping variables to your specific Atlas anime fields
+  const title = anime?.Title || "Untitled"; 
   const score = anime?.Score || "N/A";
-  const synopsis = anime?.Synopsis || "No description available.";
-  
-  // Handle genres if available in your DB
-  const genres = anime?.Genres 
-    ? (typeof anime.Genres === 'string' ? anime.Genres.split(',') : anime.Genres) 
-    : [];
+  const type = anime?.Type || "Unknown";
+  const episodes = anime?.Episodes ? `${anime.Episodes} Eps` : "Ongoing";
+  const description = anime?.synopsis || "No description available.";
 
   return (
-    <div className="group relative w-72 bg-gray-900/80 rounded-2xl overflow-hidden border border-gray-700/50 hover:border-blue-500/50 transition-all shadow-xl backdrop-blur-md">
-      {/* Image / Details Trigger */}
-      <div 
-        className="relative h-96 overflow-hidden cursor-pointer" 
-        onClick={() => onSelect(anime)}
-      >
-        <img 
-          src={image} 
-          alt={title} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-          onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
-        />
-        <div className="absolute top-4 right-4 bg-blue-600/90 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold">
+    <div 
+      className="group relative w-72 h-[400px] bg-gray-900/90 rounded-2xl p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all shadow-xl backdrop-blur-md flex flex-col cursor-pointer"
+      onClick={() => onSelect(anime)}
+    >
+      {/* Header Section: Metadata Badges */}
+      <div className="flex justify-between items-start mb-4">
+        <span className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border border-blue-600/30">
+          {type} • {episodes}
+        </span>
+        <span className="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-md text-xs font-bold border border-yellow-500/30">
           ⭐ {score}
-        </div>
+        </span>
       </div>
 
-      <div className="p-5">
-        <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">{title}</h3>
+      {/* Body Section: Title & Content */}
+      <div className="flex-grow overflow-hidden">
+        <h3 className="text-xl font-bold text-white line-clamp-2 leading-tight mb-3" title={title}>
+          {title}
+        </h3>
         
-        {/* Genre Tags (Optional) */}
-        <div className="flex flex-wrap gap-1 mb-3">
-          {genres.slice(0, 2).map((g, i) => (
-            <span key={i} className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
-              {g.trim()}
-            </span>
-          ))}
-        </div>
+        {/* Decorative Animated Line */}
+        <div className="w-10 h-1 bg-blue-600 rounded-full mb-4 group-hover:w-full transition-all duration-500"></div>
+        
+        <p className="text-gray-400 text-sm line-clamp-5 leading-relaxed italic">
+          "{description}"
+        </p>
+      </div>
 
-        <p className="text-gray-400 text-xs line-clamp-2 mb-4">{synopsis}</p>
-        
-        {/* Action Button */}
+      {/* Footer Section: Interactive Button */}
+      <div className="mt-4">
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Prevents clicking the card background
+            e.stopPropagation(); // Prevents the card's onClick (onSelect) from firing
             isWatchlisted ? removeFromWatchlist(anime) : addToWatchlist(anime);
           }}
-          className={`w-full py-2.5 rounded-xl font-bold transition-all transform active:scale-95 ${
+          className={`w-full py-3 rounded-xl font-bold text-sm transition-all transform active:scale-95 shadow-lg ${
             isWatchlisted 
               ? 'bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white' 
-              : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'
+              : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-900/20'
           }`}
         >
-          {isWatchlisted ? 'Remove' : 'Add to List'}
+          {isWatchlisted ? 'Remove from List' : 'Add to Watchlist'}
         </button>
       </div>
     </div>

@@ -1,0 +1,5 @@
+node_modules/
+mong.env
+.env
+dist/
+.DS_StoreS
