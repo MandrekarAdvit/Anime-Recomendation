@@ -22,11 +22,9 @@ During development, I encountered rate-limiting challenges (HTTP 429) when fetch
 - `/animeBack`: Express server and Mongoose models (`Anime.js`, `User.js`).
 - `/my-anime-app`: React frontend with Tailwind-styled components.
 
-##  Development Roadmap
-### Day 1: Auth & Navigation (Upcoming)
-- JWT-based User Authentication (Sign up/Sign in).
-- Seamless navigation using React Router v6.
-
-### Day 2: Scalability & Personalization (Upcoming)
-- "Load More" pagination for the 21k dataset.
-- Persistent user-specific Watchlists stored in MongoDB.
+### 🗓️ Update: Dec 23, 2025
+**Accomplishments:**
+* **Theme Synchronization**: Successfully implemented a unified "Emerald-on-Black" aesthetic across the Dashboard, Catalogue, and Vault.
+* **Dynamic Pagination**: Added "Load More" functionality to efficiently browse 21,700+ records using backend `limit` and `skip` logic.
+* **Routing Overhaul**: Replaced text placeholders with functional React Router paths for Login, Signup, and dynamic Anime Details.
+* **Security**: Verified `.gitignore` configuration to protect database credentials in `mong.env`.
