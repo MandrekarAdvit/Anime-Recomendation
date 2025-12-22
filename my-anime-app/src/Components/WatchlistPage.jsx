@@ -1,31 +1,77 @@
 import React from 'react';
-import AnimeCard from './AnimeCard';
+import { useNavigate } from 'react-router-dom';
 
-const WatchlistPage = ({ watchlist, onAnimeSelect, addToWatchlist, removeFromWatchlist }) => {
+const WatchlistPage = ({ watchlist, removeFromWatchlist }) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="w-full max-w-7xl px-4 py-8 sm:py-16">
-      <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-12 bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-        My Anime List
-      </h2>
-      
+    <div className="min-h-screen bg-black text-white pb-20 px-4 md:px-10 pt-32">
+      {/* Header Section Matches the Catalogue Style */}
+      <header className="mb-20 text-center max-w-4xl mx-auto">
+        <h1 className="text-6xl md:text-8xl font-black italic uppercase text-emerald-500 drop-shadow-[0_0_25px_rgba(16,185,129,0.3)] mb-4">
+          The Vault
+        </h1>
+        <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.5em]">
+          {watchlist.length} Secured Records
+        </p>
+      </header>
+
       {watchlist.length > 0 ? (
-        <div className="flex flex-wrap justify-center gap-8">
+        /* Grid matches the AnimeList layout */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {watchlist.map((anime) => (
-            <AnimeCard
-              // FIX: Use MongoDB _id for the key
-              key={anime._id || anime.id}
-              anime={anime}
-              onSelect={onAnimeSelect}
-              addToWatchlist={addToWatchlist}
-              removeFromWatchlist={removeFromWatchlist}
-              isWatchlisted={true} 
-            />
+            <div 
+              key={anime._id} 
+              className="bg-gray-950 rounded-[2.5rem] border-2 border-emerald-900/10 p-10 flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-500 group relative shadow-2xl"
+            >
+              {/* Large Score Display */}
+              <div className="mb-6 flex justify-between items-start">
+                <div className="h-1 w-10 bg-emerald-600 rounded-full group-hover:w-16 transition-all duration-500" />
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-emerald-900 uppercase tracking-tighter mb-1">Score</p>
+                  <span className="text-4xl font-black text-emerald-400 italic leading-none drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+                    {anime.Score || "N/A"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-10">
+                <h3 className="text-2xl font-black text-white uppercase italic leading-tight drop-shadow-md group-hover:text-emerald-500 transition-colors">
+                  {anime.Title} 
+                </h3>
+              </div>
+              
+              <div className="flex flex-col gap-4">
+                {/* Remove Button in Muted Red Style */}
+                <button 
+                  onClick={() => removeFromWatchlist(anime)}
+                  className="w-full py-4 font-black uppercase text-xs rounded-xl transition-all active:scale-95 bg-red-900/20 text-red-500 border border-red-500/40 hover:bg-red-600 hover:text-white shadow-lg"
+                >
+                  Remove from Vault
+                </button>
+
+                <button 
+                  onClick={() => navigate(`/animes/${anime._id}`)}
+                  className="w-full py-3 bg-transparent text-emerald-500 font-bold uppercase text-[10px] rounded-xl border-2 border-emerald-500/30 hover:bg-emerald-500/10 transition-all"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-800/30 rounded-xl backdrop-blur-sm border border-gray-700/50">
-          <p className="text-xl font-semibold text-gray-400">Your Watchlist is Empty</p>
-          <p className="text-gray-500 mt-2">Add some anime from the catalog to get started!</p>
+        /* Empty State with Vault Aesthetic */
+        <div className="text-center py-32 bg-gray-950/50 rounded-[3rem] border-2 border-dashed border-emerald-900/20 max-w-2xl mx-auto">
+          <p className="text-2xl font-black text-emerald-900 uppercase italic tracking-widest mb-6">
+            Vault is Empty
+          </p>
+          <button 
+            onClick={() => navigate('/catalog')}
+            className="text-emerald-500 font-black uppercase text-xs tracking-widest border-b-2 border-emerald-500/50 hover:border-emerald-500 transition-all pb-1"
+          >
+            Access Catalogue to Secure Records
+          </button>
         </div>
       )}
     </div>

@@ -1,66 +1,50 @@
-import React from 'react';
+// src/Components/AnimeDetails.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
-const DetailItem = ({ label, value }) => (
-  <div>
-    <p className="text-sm font-semibold text-gray-400">{label}</p>
-    <p className="text-lg text-white">{value || 'N/A'}</p>
-  </div>
-);
+const AnimeDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [anime, setAnime] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-const AnimeDetails = ({ anime }) => {
-  if (!anime) {
-    return <p>Loading anime details...</p>;
-  }
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/api/animes/${id}`);
+        const data = await response.json();
+        setAnime(data);
+      } catch (err) {
+        console.error("Error loading record:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchDetails();
+  }, [id]);
+
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-emerald-500 font-black">ACCESSING VAULT...</div>;
+  if (!anime) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500">RECORD NOT FOUND</div>;
 
   return (
-    <div className="w-full max-w-5xl p-6 sm:p-8 bg-gray-800/50 rounded-2xl shadow-xl border border-gray-700 backdrop-blur-sm text-white">
-      <div className="flex flex-col md:flex-row gap-8">
+    <div className="min-h-screen bg-black text-white p-10 pt-32">
+      <button onClick={() => navigate(-1)} className="text-emerald-500 font-bold mb-10 hover:underline uppercase text-xs tracking-widest">← Back to Catalogue</button>
+      
+      <div className="max-w-5xl mx-auto bg-gray-950 p-12 rounded-[3rem] border border-emerald-900/20 shadow-2xl">
+        <h1 className="text-6xl font-black italic text-white mb-8 uppercase drop-shadow-lg">{anime.Title}</h1>
         
-        {/* Left Column: Image */}
-        <div className="w-full md:w-1/3 flex-shrink-0">
-          <img
-            src={anime.photo}
-            alt={`Poster of ${anime.title}`}
-            className="w-full h-auto object-cover rounded-lg shadow-lg"
-            onError={(e) => e.target.src = "https://placehold.co/400x550/0F172A/FFFFFF?text=No+Image"}
-          />
+        <div className="flex gap-4 mb-10">
+          <span className="px-6 py-2 bg-emerald-900/20 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-black uppercase">Rating: {anime.Score || "N/A"}</span>
+          <span className="px-6 py-2 bg-emerald-900/20 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-black uppercase">Type: {anime.Type}</span>
         </div>
 
-        {/* Right Column: Details */}
-        <div className="w-full md:w-2/3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-            {anime.title}
-          </h1>
-          
-          <div className="flex items-center gap-4 mb-6">
-             <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500">
-                <span className="font-bold text-lg">★</span>
-                <span className="font-bold text-lg">{anime.score}</span>
-             </div>
-          </div>
-          
-          <h2 className="text-xl font-bold text-blue-300 mb-2">Synopsis</h2>
-          <p className="text-gray-300 mb-6 text-base leading-relaxed">
-            {anime.synopsis}
-          </p>
+        <div className="h-1 w-20 bg-emerald-600 rounded-full mb-10" />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 mb-6 p-4 bg-gray-900/40 rounded-lg">
-            <DetailItem label="Type" value={anime.type} />
-            <DetailItem label="Episodes" value={anime.episodes} />
-            <DetailItem label="Status" value={anime.status} />
-            <DetailItem label="Aired" value={anime.aired} />
-            <DetailItem label="Premiered" value={anime.premiered} />
-            <DetailItem label="Source" value={anime.source} />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {anime.genres && anime.genres.split(',').map((genre, index) => (
-              <span key={index} className="bg-gray-700/80 text-gray-200 text-xs px-3 py-1 rounded-full font-medium border border-gray-600">
-                {genre.trim()}
-              </span>
-            ))}
-          </div>
-        </div>
+        {/* FIXED: Changed anime.Description to anime.synopsis */}
+        <p className="text-gray-400 text-xl leading-relaxed font-medium">
+          {anime.synopsis || "No detailed dossier available for this title."}
+        </p>
       </div>
     </div>
   );
