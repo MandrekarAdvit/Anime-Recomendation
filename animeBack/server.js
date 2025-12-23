@@ -22,7 +22,7 @@ if (fs.existsSync(envFile)) {
 const app = express();
 
 // 2. Middleware
-app.use(cors());
+app.use(cors()); // Critical: Allows your React frontend to talk to this server
 app.use(express.json());
 
 // 3. Connect to MongoDB
@@ -36,41 +36,111 @@ if (!mongoURI) {
 }
 
 // --- 4. Authentication Routes ---
-// (Register and Login routes remain unchanged)
+
+/**
+ * REGISTER NEW USER
+ */
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: "User already exists" });
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user
+        const newUser = new User({ username, email, password: hashedPassword });
+        await newUser.save();
+
+        res.status(201).json({ message: "User created successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * LOGIN USER
+ */
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Find user
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+        // Create JWT Token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
+
+        // Return token and username for the frontend to store
+        res.json({ token, username: user.username });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // --- 5. Anime Catalog Routes ---
 
 /**
- * GET ALL ANIMES with Search and Pagination
- * Support for 'limit' and 'skip' allows for true "Load More" behavior.
+ * GET ALL ANIMES with Search, Filtering, and Sorting
  */
 app.get('/api/animes', async (req, res) => {
     try {
-        const { search, limit, skip } = req.query; // Added 'skip'
+        const { search, limit, skip, sort, year, genre } = req.query; 
         let query = {};
         
         if (search && search.trim() !== "") {
             query.Title = { $regex: search, $options: 'i' }; 
         }
 
-        // Convert query params to integers with safe defaults
-        const finalLimit = parseInt(limit) || 20; 
-        const finalSkip = parseInt(skip) || 0; // Number of items to skip
+        if (year) {
+            if (year === 'Earlier') {
+                query["Aired From"] = { $lt: "1980-01-01" };
+            } else {
+                const decadePrefix = year.substring(0, 3);
+                query["Aired From"] = { $regex: `^${decadePrefix}`, $options: 'i' };
+            }
+        }
 
-        // Fetching with skip and limit for efficient pagination
+        if (genre && genre !== "") {
+            query.genres = { $regex: genre, $options: 'i' }; 
+        }
+
+        let sortOptions = {};
+        if (sort === 'Score') {
+            sortOptions = { Score: -1 }; 
+        } else if (sort === 'Popularity') {
+            sortOptions = { Popularity: 1 }; 
+        } else if (sort === 'RecentlyAdded') {
+            sortOptions = { "Aired From": -1 }; 
+        } else {
+            sortOptions = { Title: 1 }; 
+        }
+
+        const finalLimit = parseInt(limit) || 20; 
+        const finalSkip = parseInt(skip) || 0; 
+
         const animes = await Anime.find(query)
-            .sort({ Title: 1 }) // Sort alphabetically for consistent pagination
+            .sort(sortOptions)
             .skip(finalSkip)
             .limit(finalLimit);
 
-        console.log(`🔍 Found ${animes.length} animes (Skip: ${finalSkip}, Limit: ${finalLimit})`);
         res.json(animes);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// GET SINGLE ANIME BY ID
+/**
+ * GET SINGLE ANIME BY ID
+ */
 app.get('/api/animes/:id', async (req, res) => {
     try {
         const anime = await Anime.findById(req.params.id);

@@ -27,4 +27,3 @@ During development, I encountered rate-limiting challenges (HTTP 429) when fetch
 * **Theme Synchronization**: Successfully implemented a unified "Emerald-on-Black" aesthetic across the Dashboard, Catalogue, and Vault.
 * **Dynamic Pagination**: Added "Load More" functionality to efficiently browse 21,700+ records using backend `limit` and `skip` logic.
 * **Routing Overhaul**: Replaced text placeholders with functional React Router paths for Login, Signup, and dynamic Anime Details.
-* **Security**: Verified `.gitignore` configuration to protect database credentials in `mong.env`.
