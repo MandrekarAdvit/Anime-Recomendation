@@ -22,8 +22,23 @@ During development, I encountered rate-limiting challenges (HTTP 429) when fetch
 - `/animeBack`: Express server and Mongoose models (`Anime.js`, `User.js`).
 - `/my-anime-app`: React frontend with Tailwind-styled components.
 
-### 🗓️ Update: Dec 23, 2025
+###  Update: Dec 23, 2025
 **Accomplishments:**
 * **Theme Synchronization**: Successfully implemented a unified "Emerald-on-Black" aesthetic across the Dashboard, Catalogue, and Vault.
 * **Dynamic Pagination**: Added "Load More" functionality to efficiently browse 21,700+ records using backend `limit` and `skip` logic.
 * **Routing Overhaul**: Replaced text placeholders with functional React Router paths for Login, Signup, and dynamic Anime Details.
+
+### Update: DEC 24, 2025
+**Accomplishments:**
+* **Authentication & Identity**: Fully functional JWT-based login and signup system with protected routing.
+* **Catalogue discovery**: High-performance browsing interface for a library of over 21,700 records.
+* **Smart Search & Filters**: Multi-tier filtering based on Eras, Genres, and Vault Scores.
+* **Reactive UI Logic**: Implemented "Deep Clean" logout functionality that resets global state and clears local persistence instantly.
+* **Access Guard**: Integrated a professional modal interceptor that prevents guest users from saving to the vault, encouraging account creation.
+
+**Refined Recommendation Strategy**
+To ensure the project is both impactful and efficient for a passion project, the recommendation engine will use a Hybrid Content-Based Filtering approach:
+Metadata Soup: Combining Synopsis, Genres, and Studios into a single textual feature.
+TF-IDF Vectorization: Converting textual content into numerical vectors for similarity comparison.
+Cosine Similarity: Calculating the relatedness between titles to suggest accurate "Next Watches".
+Sentiment Layer: Using BERT for Aspect-Based Sentiment Analysis (ABSA) to display "Vibe Scores" (Animation, Story, Pacing) on the details page.
