@@ -42,3 +42,19 @@ Metadata Soup: Combining Synopsis, Genres, and Studios into a single textual fea
 TF-IDF Vectorization: Converting textual content into numerical vectors for similarity comparison.
 Cosine Similarity: Calculating the relatedness between titles to suggest accurate "Next Watches".
 Sentiment Layer: Using BERT for Aspect-Based Sentiment Analysis (ABSA) to display "Vibe Scores" (Animation, Story, Pacing) on the details page.
+
+## 🚀 Project Status: Day 3 Completed
+
+### Key Achievements Today:
+- **Centralized Vault Management:** Shifted state control to `App.js` to ensure a "Single Source of Truth" across all components.
+- **Full-Stack Persistence:** Replaced `localStorage` with a MongoDB-backed Watchlist system.
+- **Dynamic UI States:** Implemented real-time button-to-tag transitions in `AnimeDetails.jsx` based on database synchronization.
+- **Secure CRUD Operations:** Built `POST` and `DELETE` backend routes to manage user-specific "Secured Records" with JWT authentication.
+
+### Current Architecture:
+
+
+### Next Milestone (Day 4):
+- **Hybrid Recommendation Engine:** Implementing the "Interest Vector" logic using Genre Frequency Analysis.
+- **Discovery Logic:** Filtering for high-quality titles (7.0+) and "Hidden Gem" (N/A) records.
+- **Genre-Specific Discovery:** Adding user-controlled "Genre Pills" for manual recommendation overrides.
