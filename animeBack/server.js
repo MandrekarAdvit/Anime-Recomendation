@@ -22,7 +22,7 @@ if (fs.existsSync(envFile)) {
 const app = express();
 
 // 2. Middleware
-app.use(cors()); 
+app.use(cors()); // Allows React frontend to talk to this server
 app.use(express.json());
 
 // 3. Connect to MongoDB
@@ -70,10 +70,6 @@ app.post('/api/login', async (req, res) => {
 
 // --- 5. Vault / Watchlist Routes ---
 
-/**
- * ADD TO WATCHLIST
- * Verifies token, checks for duplicates, and pushes Anime ID to User array.
- */
 app.post('/api/watchlist/add', async (req, res) => {
     const { animeId, token } = req.body;
     try {
@@ -82,7 +78,6 @@ app.post('/api/watchlist/add', async (req, res) => {
 
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Ensure title isn't already saved
         if (user.watchlist.includes(animeId)) {
             return res.status(400).json({ message: "Title already secured in Vault" });
         }
@@ -98,10 +93,6 @@ app.post('/api/watchlist/add', async (req, res) => {
     }
 });
 
-/**
- * FETCH WATCHLIST
- * Populates full anime data for the user's saved IDs.
- */
 app.get('/api/watchlist', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ message: "Unauthorized access" });
@@ -136,7 +127,11 @@ app.get('/api/animes', async (req, res) => {
         else if (sort === 'Popularity') sortOptions = { Popularity: 1 }; 
         else if (sort === 'RecentlyAdded') sortOptions = { "Aired From": -1 }; 
 
-        const animes = await Anime.find(query).sort(sortOptions).skip(Number(skip) || 0).limit(Number(limit) || 20);
+        const animes = await Anime.find(query)
+            .sort(sortOptions)
+            .skip(Number(skip) || 0)
+            .limit(Number(limit) || 20);
+
         res.json(animes);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -153,29 +148,16 @@ app.get('/api/animes/:id', async (req, res) => {
     }
 });
 
-/**
- * GET SIMILAR ANIMES
- * Robust multi-field matching for genres.
- */
 app.get('/api/animes/:id/similar', async (req, res) => {
-    console.log(`📡 Incoming similarity request for ID: ${req.params.id}`);
-
     try {
         const { id } = req.params;
         const currentAnime = await Anime.findById(id).lean();
-
         if (!currentAnime) return res.json([]);
 
-        // Handle string or array genres
         const rawGenres = currentAnime.genres || currentAnime.Genres || "";
-        if (!rawGenres) {
-            console.log("⚠️ No genres found for this record.");
-            return res.json([]);
-        }
+        if (!rawGenres) return res.json([]);
 
         const primaryGenre = rawGenres.split(',')[0].trim();
-        console.log(`🔍 Searching for matches to: ${primaryGenre}`);
-
         const similarAnimes = await Anime.find({
             _id: { $ne: id },
             $or: [
@@ -184,10 +166,8 @@ app.get('/api/animes/:id/similar', async (req, res) => {
             ]
         }).limit(5);
 
-        console.log(`✅ Found ${similarAnimes.length} matching titles.`);
         res.json(similarAnimes);
     } catch (err) {
-        console.error("🛑 Similarity Route Error:", err.message);
         res.status(500).json({ error: "Backend failure" });
     }
 });

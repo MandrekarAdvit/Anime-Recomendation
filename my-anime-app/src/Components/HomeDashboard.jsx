@@ -1,15 +1,15 @@
-// src/Components/HomeDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const HomeDashboard = () => {
+// Ensure these props are being passed from App.js where your auth state lives
+const HomeDashboard = ({ isLoggedIn, username }) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
     {
       title: "MASSIVE DATABASE",
-      desc: "Instant access to 21,764 anime records hosted on MongoDB Atlas.",
+      desc: "Instant access to 10,000+ anime records.",
       img: "https://otakukart.com/wp-content/uploads/2025/03/The-Big-Three-Anime-2.webp",
     },
     {
@@ -48,9 +48,9 @@ const HomeDashboard = () => {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-black text-white/90 mb-2 tracking-tighter uppercase italic">
-            WELCOME TO
+            {/* Conditional Heading: Greets user if logged in */}
+            {isLoggedIn ? `WELCOME BACK, ${username || 'MEMBER'}` : "WELCOME TO"}
           </h1>
-          {/* Brand Identity: Updated to Emerald Green */}
           <h1 className="text-8xl md:text-[10rem] font-black tracking-tighter uppercase italic leading-none drop-shadow-2xl">
             <span className="text-white">ANIME</span>
             <span className="text-emerald-500">VAULT</span>
@@ -95,6 +95,7 @@ const HomeDashboard = () => {
                 {slides[currentSlide].desc}
               </p>
 
+              {/* ACTION BUTTONS: CONDITIONAL RENDERING HERE */}
               <div className="flex flex-col sm:flex-row gap-8">
                 <button 
                   onClick={() => navigate('/catalog')}
@@ -102,13 +103,24 @@ const HomeDashboard = () => {
                 >
                   Explore Catalog
                 </button>
-                {/* FIXED: Path updated from /signup to /register */}
-                <button 
-                  onClick={() => navigate('/register')}
-                  className="px-16 py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-2xl font-black text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
-                >
-                  Join Now
-                </button>
+
+                {isLoggedIn ? (
+                  /* Shows when user is logged in */
+                  <button 
+                    onClick={() => navigate('/watchlist')}
+                    className="px-16 py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-2xl font-black text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
+                  >
+                    My Watchlist
+                  </button>
+                ) : (
+                  /* Shows when user is logged out */
+                  <button 
+                    onClick={() => navigate('/register')}
+                    className="px-16 py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-2xl font-black text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
+                  >
+                    Join Now
+                  </button>
+                )}
               </div>
             </div>
           </div>
