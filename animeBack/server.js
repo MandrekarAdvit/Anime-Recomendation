@@ -22,7 +22,7 @@ if (fs.existsSync(envFile)) {
 const app = express();
 
 // 2. Middleware
-app.use(cors()); // Allows React frontend to talk to this server
+app.use(cors()); 
 app.use(express.json());
 
 // 3. Connect to MongoDB
@@ -76,20 +76,46 @@ app.post('/api/watchlist/add', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
         const user = await User.findById(decoded.id);
 
-        if (!user) return res.status(404).json({ message: "User not found" });
+        if (!user) return res.status(404).json({ message: "User verification failed." });
 
-        if (user.watchlist.includes(animeId)) {
-            return res.status(400).json({ message: "Title already secured in Vault" });
-        }
+        const alreadyExists = user.watchlist.some(id => id.toString() === animeId);
+        if (alreadyExists) return res.status(400).json({ message: "Title already secured in your Vault." });
 
         user.watchlist.push(animeId);
         await user.save();
         
-        console.log(`📥 Added Anime ${animeId} to ${user.username}'s Vault`);
-        res.json({ message: "Successfully added to your Vault" });
+        console.log(`📥 VAULT SYNC: Added ${animeId} to ${user.username}'s profile.`);
+        res.json({ message: "Successfully added to your Vault", watchlist: user.watchlist });
     } catch (err) {
-        console.error("🛑 Watchlist Sync Error:", err.message);
-        res.status(500).json({ error: "Vault sync failed" });
+        res.status(401).json({ message: "Session expired or invalid. Please login." });
+    }
+});
+
+/**
+ * 🚀 NEW: PERSISTENT DELETE ROUTE
+ * Removes the Anime ID from the User's watchlist array in MongoDB.
+ */
+app.delete('/api/watchlist/remove', async (req, res) => {
+    const { animeId } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: "Unauthorized: No token provided" });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const user = await User.findById(decoded.id);
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Filter the array to remove the specific Anime ID
+        user.watchlist = user.watchlist.filter(id => id.toString() !== animeId);
+        await user.save();
+
+        console.log(`🗑️ VAULT UPDATE: Expunged ${animeId} from ${user.username}'s profile.`);
+        res.json({ message: "Record expunged successfully" });
+    } catch (err) {
+        console.error("🛑 Expunge Error:", err.message);
+        res.status(500).json({ error: "Failed to expunge record from Vault" });
     }
 });
 
@@ -172,7 +198,6 @@ app.get('/api/animes/:id/similar', async (req, res) => {
     }
 });
 
-// 7. Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is flying on http://localhost:${PORT}`);

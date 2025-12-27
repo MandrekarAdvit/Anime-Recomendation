@@ -14,11 +14,7 @@ const App = () => {
   // --- 1. CORE STATES ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
-  const [watchlist, setWatchlist] = useState(() => {
-    // Initialize state from storage to maintain vault across refreshes
-    const saved = localStorage.getItem('animeVault');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [watchlist, setWatchlist] = useState([]); 
 
   // --- 2. SESSION INITIALIZATION ---
   useEffect(() => {
@@ -30,50 +26,110 @@ const App = () => {
     }
   }, []);
 
-  // --- 3. PERSISTENCE SYNC ---
-  // Automatically saves the watchlist to storage whenever it changes
+  // --- 3. BACKEND VAULT SYNCHRONIZATION ---
+  useEffect(() => {
+    const syncVaultWithDB = async () => {
+      const token = localStorage.getItem('token');
+      if (isLoggedIn && token) {
+        try {
+          const res = await fetch('http://localhost:5000/api/watchlist', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const dbWatchlist = await res.json();
+            setWatchlist(dbWatchlist); 
+          }
+        } catch (err) {
+          console.error("Vault synchronization failed:", err);
+        }
+      }
+    };
+    syncVaultWithDB();
+  }, [isLoggedIn]);
+
+  // --- 4. PERSISTENCE SYNC (Local Fallback) ---
   useEffect(() => {
     localStorage.setItem('animeVault', JSON.stringify(watchlist));
   }, [watchlist]);
 
-  // --- 4. DATA HANDLERS ---
-  const addToWatchlist = (anime) => {
-    if (!watchlist.some(a => a._id === anime._id)) {
-      setWatchlist([...watchlist, anime]);
+  // --- 5. 🚀 CENTRALIZED DATA HANDLERS ---
+  
+  const addToWatchlist = async (anime) => {
+    const token = localStorage.getItem('token');
+    if (!token) return alert("Please login to secure records.");
+    if (watchlist.some(a => String(a._id) === String(anime._id))) return;
+
+    try {
+      const res = await fetch('http://localhost:5000/api/watchlist/add', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ animeId: anime._id, token })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setWatchlist((prev) => [...prev, anime]);
+        console.log(`✅ VAULT SYNC: ${anime.Title} secured.`);
+      } 
+      else if (res.status === 400 && data.message.includes("already secured")) {
+        setWatchlist((prev) => [...prev, anime]);
+        console.log("🔄 UI Catch-up: Syncing local state with existing DB record.");
+      } 
+      else {
+        alert(data.message || "Failed to sync with Vault.");
+      }
+    } catch (err) {
+      console.error("Critical Vault Sync Error:", err);
     }
   };
 
-  const removeFromWatchlist = (anime) => {
-    setWatchlist((prev) => prev.filter((item) => item._id !== anime._id));
+  /**
+   * 🚀 UPDATED: REMOVE FROM WATCHLIST (Centralized Async Logic)
+   * Handles both the Backend DELETE and Frontend State update
+   */
+  const removeFromWatchlist = async (anime) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      // A. Sync with MongoDB Backend
+      const res = await fetch('http://localhost:5000/api/watchlist/remove', {
+        method: 'DELETE',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ animeId: anime._id })
+      });
+
+      if (res.ok) {
+        // B. Update local state only if backend confirms success
+        setWatchlist((prev) => prev.filter((item) => String(item._id) !== String(anime._id)));
+        console.log(`🗑️ VAULT UPDATE: Expunged ${anime.Title} from Database and local State.`);
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to expunge record from Vault.");
+      }
+    } catch (err) {
+      console.error("Critical Removal Sync Error:", err);
+    }
   };
 
-  /**
-   * --- 5. LOGIC: FULL SESSION TERMINATION (DEEP CLEAN) ---
-   * This is the "Source of Truth" for the entire app. 
-   * When this runs, it clears everything needed for a fresh guest state.
-   */
+  // --- 6. LOGIC: FULL SESSION TERMINATION ---
   const handleLogout = () => {
-    // A. Clear Authentication from Browser
     localStorage.removeItem('token');
     localStorage.removeItem('username');
-    
-    // B. Clear Saved Vault Data from Browser Storage
-    // This prevents old data from "leaking" back into a new session
     localStorage.removeItem('animeVault'); 
-    
-    // C. Reset React States (Triggers immediate Navbar & Route re-render)
     setIsLoggedIn(false);
     setUsername("");
-
-    // D. CRITICAL: Reset Watchlist memory
-    // Because AnimeList receives this 'watchlist' as a prop, 
-    // setting this to [] forces all red buttons to turn green instantly.
     setWatchlist([]); 
-
-    console.log("Vault Session Terminated: Auth and Watchlist data cleared.");
+    console.log("Vault Session Terminated.");
   };
 
-  // --- 6. ROUTE PROTECTION ---
   const ProtectedRoute = ({ children }) => {
     return isLoggedIn ? children : <Navigate to="/login" />;
   };
@@ -81,17 +137,11 @@ const App = () => {
   return (
     <Router>
       <main className="min-h-screen bg-black text-white">
-        <Navbar
-          watchlistCount={watchlist.length}
-          isLoggedIn={isLoggedIn}
-          handleLogout={handleLogout}
-        />
+        <Navbar watchlistCount={watchlist.length} isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
        
         <Routes>
-          {/* Dashboard Route */}
           <Route path="/" element={<HomeDashboard isLoggedIn={isLoggedIn} username={username} />} />
-         
-          {/* Catalogue Route - Receives watchlist prop to toggle buttons */}
+          
           <Route path="/catalog" element={
             <AnimeList
               watchlist={watchlist}
@@ -100,25 +150,29 @@ const App = () => {
               isLoggedIn={isLoggedIn} 
             />
           } />
-         
-          {/* Protected Watchlist Route */}
+          
           <Route path="/watchlist" element={
             <ProtectedRoute>
               <WatchlistPage watchlist={watchlist} removeFromWatchlist={removeFromWatchlist} />
             </ProtectedRoute>
           } />
-         
-          {/* Auth Routes: Blocked if already logged in */}
+          
           <Route path="/login" element={
             !isLoggedIn ? <Login setIsLoggedIn={setIsLoggedIn} setUsername={setUsername} /> : <Navigate to="/" />
           } />
-         
+          
           <Route path="/register" element={
             !isLoggedIn ? <Signup /> : <Navigate to="/" />
           } />
 
-          {/* Details & Fallback */}
-          <Route path="/animes/:id" element={<AnimeDetails />} />
+          <Route path="/animes/:id" element={
+            <AnimeDetails 
+              watchlist={watchlist} 
+              addToWatchlist={addToWatchlist} 
+              isLoggedIn={isLoggedIn}
+            />
+          } />
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

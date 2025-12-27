@@ -1,31 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 
-const AnimeDetails = () => {
+const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // 🚀 FIXED: Initialize state directly from localStorage to prevent UI "flicker"
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
-  
   const [anime, setAnime] = useState(null);
   const [similar, setSimilar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    // Re-verify login status whenever the ID changes
-    setIsLoggedIn(!!localStorage.getItem('token'));
+  // 🚀 Derive status from global state prop
+  const isInVault = watchlist?.some(item => String(item._id) === String(id));
 
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // 1. Fetch main record dossier
         const res = await fetch(`http://localhost:5000/api/animes/${id}`);
         const data = await res.json();
         setAnime(data);
 
-        // 2. Fetch similar titles for recommendation engine
         const simRes = await fetch(`http://localhost:5000/api/animes/${id}/similar`);
         const simData = await simRes.json();
         setSimilar(simData);
@@ -38,30 +33,21 @@ const AnimeDetails = () => {
     if (id) fetchData();
   }, [id]);
 
-  // 🚀 WATCHLIST HANDLER: Secures the record to the user's MongoDB profile
-  const addToWatchlist = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("⚠️ ACCESS DENIED: Please login to add titles to your Vault.");
-      return;
-    }
-
+  /**
+   * 🚀 REFINED HANDLER
+   * We no longer do a local 'fetch' here. 
+   * We call the parent's centralized 'addToWatchlist' which handles the DB sync.
+   */
+  const handleVaultSync = async () => {
     try {
       setIsSaving(true);
-      const res = await fetch('http://localhost:5000/api/watchlist/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ animeId: id, token })
-      });
-      const data = await res.json();
-      
-      if (res.ok) {
-        alert("✅ SUCCESS: Record secured in your Vault.");
-      } else {
-        alert(data.message || "Failed to sync with Vault.");
-      }
+      // Calls the logic in App.js which handles:
+      // 1. Database POST
+      // 2. Error handling (Already secured check)
+      // 3. Global state update
+      await addToWatchlist(anime); 
     } catch (err) {
-      console.error("Watchlist Sync Error:", err);
+      console.error("Sync delegation failed:", err);
     } finally {
       setIsSaving(false);
     }
@@ -83,15 +69,21 @@ const AnimeDetails = () => {
           Back to Catalogue
         </button>
 
-        {/* 🚀 DYNAMIC AUTH UI: Logic based on immediate state check */}
+        {/* 🚀 ACTION UI */}
         {isLoggedIn ? (
-          <button 
-            onClick={addToWatchlist}
-            disabled={isSaving}
-            className={`px-8 py-3 bg-emerald-500 text-black font-black uppercase text-[12px] tracking-[0.2em] rounded-full hover:bg-white hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isSaving ? 'Syncing...' : '+ Add to Vault'}
-          </button>
+          isInVault ? (
+            <div className="px-8 py-3 bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 font-black uppercase text-[12px] tracking-[0.2em] rounded-full flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              <span className="text-lg">✓</span> Secured in Vault
+            </div>
+          ) : (
+            <button 
+              onClick={handleVaultSync}
+              disabled={isSaving}
+              className={`px-8 py-3 bg-emerald-500 text-black font-black uppercase text-[12px] tracking-[0.2em] rounded-full hover:bg-white hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isSaving ? 'Syncing...' : '+ Add to Vault'}
+            </button>
+          )
         ) : (
           <Link 
             to="/login"
@@ -102,8 +94,8 @@ const AnimeDetails = () => {
         )}
       </div>
       
+      {/* Rest of the UI (Header, Synopsis, Tech Grid, Similar) remains identical */}
       <div className="max-w-7xl mx-auto">
-        {/* 📑 MAIN CONTENT HEADER */}
         <header className="mb-16">
           <div className="flex flex-wrap gap-3 mb-8">
             {anime.genres?.split(',').map(genre => (
@@ -129,7 +121,6 @@ const AnimeDetails = () => {
           </div>
         </header>
 
-        {/* 📖 SYNOPSIS SECTION */}
         <section className="mb-24">
           <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Synopsis</h3>
           <p className="text-gray-300 text-2xl md:text-3xl leading-snug font-medium max-w-6xl italic border-l-4 border-emerald-500/30 pl-10">
@@ -137,7 +128,6 @@ const AnimeDetails = () => {
           </p>
         </section>
 
-        {/* 📊 REFACTORED TECHNICAL GRID */}
         <section className="mb-40">
           <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Additional information</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-emerald-900/20 rounded-[2.5rem] overflow-hidden border border-emerald-900/20">
@@ -155,7 +145,6 @@ const AnimeDetails = () => {
           </div>
         </section>
 
-        {/* 🚀 REFACTORED SIMILAR DISCOVERIES (Text-Only) */}
         <section className="pt-24 border-t border-emerald-900/20">
           <div className="flex items-center gap-8 mb-16">
             <h2 className="text-4xl font-black italic uppercase text-white">You may also be interested in</h2>
@@ -167,25 +156,20 @@ const AnimeDetails = () => {
               <div 
                 key={item._id} 
                 onClick={() => { navigate(`/animes/${item._id}`); window.scrollTo(0,0); }}
-                className="group cursor-pointer p-8 bg-gray-950/50 rounded-3xl border border-emerald-900/20 hover:border-emerald-500/50 hover:bg-emerald-900/5 transition-all duration-300 flex flex-col"
+                className="group cursor-pointer p-8 bg-gray-950/50 rounded-3xl border border-emerald-900/20 hover:border-emerald-500/50 hover:bg-emerald-900/5 transition-all duration-300 flex flex-col h-full"
               >
                 <h4 className="text-xl font-black uppercase text-gray-300 group-hover:text-emerald-400 leading-none tracking-tight mb-6 transition-colors">
                   {item.Title}
                 </h4>
-                
                 <div className="mt-auto flex flex-wrap gap-2">
-                  {item.genres ? (
-                    item.genres.split(',').slice(0, 3).map((genre, index) => (
-                      <span 
-                        key={index} 
-                        className="px-3 py-1.5 text-[13px] font-bold uppercase tracking-widest text-emerald-500/70 bg-emerald-900/10 rounded-lg whitespace-nowrap border border-emerald-900/10"
-                      >
-                        {genre.trim()}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] font-bold uppercase text-gray-600 tracking-widest">No Data</span>
-                  )}
+                  {item.genres?.split(',').slice(0, 3).map((genre, index) => (
+                    <span 
+                      key={index} 
+                      className="px-3 py-1.5 text-[13px] font-bold uppercase tracking-widest text-emerald-500/70 bg-emerald-900/10 rounded-lg whitespace-nowrap border border-emerald-900/10"
+                    >
+                      {genre.trim()}
+                    </span>
+                  ))}
                 </div>
               </div>
             ))}

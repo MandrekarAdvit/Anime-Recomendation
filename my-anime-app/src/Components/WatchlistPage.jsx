@@ -11,7 +11,7 @@ const WatchlistPage = ({ watchlist, removeFromWatchlist }) => {
         <h1 className="text-6xl md:text-8xl font-black italic uppercase text-emerald-500 drop-shadow-[0_0_25px_rgba(16,185,129,0.3)] mb-4">
           The Vault
         </h1>
-        <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.5em]">
+        <p className="text-white/40 text-[14px] font-black uppercase tracking-[0.5em]">
           {watchlist.length} Secured Records
         </p>
       </header>
