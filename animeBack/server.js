@@ -22,7 +22,7 @@ if (fs.existsSync(envFile)) {
 const app = express();
 
 // 2. Middleware
-app.use(cors());
+app.use(cors()); 
 app.use(express.json());
 
 // 3. Connect to MongoDB
@@ -36,52 +36,163 @@ if (!mongoURI) {
 }
 
 // --- 4. Authentication Routes ---
-// (Register and Login routes remain unchanged)
 
-// --- 5. Anime Catalog Routes ---
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: "User already exists" });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, email, password: hashedPassword });
+        await newUser.save();
+        res.status(201).json({ message: "User created successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
+        res.json({ token, username: user.username });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- 5. Vault / Watchlist Routes ---
 
 /**
- * GET ALL ANIMES with Search and Pagination
- * Support for 'limit' and 'skip' allows for true "Load More" behavior.
+ * ADD TO WATCHLIST
+ * Verifies token, checks for duplicates, and pushes Anime ID to User array.
  */
-app.get('/api/animes', async (req, res) => {
+app.post('/api/watchlist/add', async (req, res) => {
+    const { animeId, token } = req.body;
     try {
-        const { search, limit, skip } = req.query; // Added 'skip'
-        let query = {};
-        
-        if (search && search.trim() !== "") {
-            query.Title = { $regex: search, $options: 'i' }; 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const user = await User.findById(decoded.id);
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Ensure title isn't already saved
+        if (user.watchlist.includes(animeId)) {
+            return res.status(400).json({ message: "Title already secured in Vault" });
         }
 
-        // Convert query params to integers with safe defaults
-        const finalLimit = parseInt(limit) || 20; 
-        const finalSkip = parseInt(skip) || 0; // Number of items to skip
+        user.watchlist.push(animeId);
+        await user.save();
+        
+        console.log(`📥 Added Anime ${animeId} to ${user.username}'s Vault`);
+        res.json({ message: "Successfully added to your Vault" });
+    } catch (err) {
+        console.error("🛑 Watchlist Sync Error:", err.message);
+        res.status(500).json({ error: "Vault sync failed" });
+    }
+});
 
-        // Fetching with skip and limit for efficient pagination
-        const animes = await Anime.find(query)
-            .sort({ Title: 1 }) // Sort alphabetically for consistent pagination
-            .skip(finalSkip)
-            .limit(finalLimit);
+/**
+ * FETCH WATCHLIST
+ * Populates full anime data for the user's saved IDs.
+ */
+app.get('/api/watchlist', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: "Unauthorized access" });
 
-        console.log(`🔍 Found ${animes.length} animes (Skip: ${finalSkip}, Limit: ${finalLimit})`);
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const user = await User.findById(decoded.id).populate('watchlist');
+        res.json(user.watchlist);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch Vault records" });
+    }
+});
+
+// --- 6. Anime Catalog Routes ---
+
+app.get('/api/animes', async (req, res) => {
+    try {
+        const { search, limit, skip, sort, year, genre } = req.query; 
+        let query = {};
+        
+        if (search?.trim()) query.Title = { $regex: search, $options: 'i' }; 
+        if (genre?.trim()) query.genres = { $regex: genre, $options: 'i' }; 
+
+        if (year) {
+            year === 'Earlier' 
+                ? query["Aired From"] = { $lt: "1980-01-01" } 
+                : query["Aired From"] = { $regex: `^${year.substring(0, 3)}`, $options: 'i' };
+        }
+
+        let sortOptions = { Title: 1 };
+        if (sort === 'Score') sortOptions = { Score: -1 }; 
+        else if (sort === 'Popularity') sortOptions = { Popularity: 1 }; 
+        else if (sort === 'RecentlyAdded') sortOptions = { "Aired From": -1 }; 
+
+        const animes = await Anime.find(query).sort(sortOptions).skip(Number(skip) || 0).limit(Number(limit) || 20);
         res.json(animes);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// GET SINGLE ANIME BY ID
 app.get('/api/animes/:id', async (req, res) => {
     try {
         const anime = await Anime.findById(req.params.id);
         if (!anime) return res.status(404).json({ message: "Anime not found" });
         res.json(anime);
     } catch (err) {
-        res.status(500).json({ error: "Invalid ID format or Server Error" });
+        res.status(500).json({ error: "Invalid ID format" });
     }
 });
 
-// 6. Start Server
+/**
+ * GET SIMILAR ANIMES
+ * Robust multi-field matching for genres.
+ */
+app.get('/api/animes/:id/similar', async (req, res) => {
+    console.log(`📡 Incoming similarity request for ID: ${req.params.id}`);
+
+    try {
+        const { id } = req.params;
+        const currentAnime = await Anime.findById(id).lean();
+
+        if (!currentAnime) return res.json([]);
+
+        // Handle string or array genres
+        const rawGenres = currentAnime.genres || currentAnime.Genres || "";
+        if (!rawGenres) {
+            console.log("⚠️ No genres found for this record.");
+            return res.json([]);
+        }
+
+        const primaryGenre = rawGenres.split(',')[0].trim();
+        console.log(`🔍 Searching for matches to: ${primaryGenre}`);
+
+        const similarAnimes = await Anime.find({
+            _id: { $ne: id },
+            $or: [
+                { genres: { $regex: primaryGenre, $options: 'i' } },
+                { Genres: { $regex: primaryGenre, $options: 'i' } }
+            ]
+        }).limit(5);
+
+        console.log(`✅ Found ${similarAnimes.length} matching titles.`);
+        res.json(similarAnimes);
+    } catch (err) {
+        console.error("🛑 Similarity Route Error:", err.message);
+        res.status(500).json({ error: "Backend failure" });
+    }
+});
+
+// 7. Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is flying on http://localhost:${PORT}`);

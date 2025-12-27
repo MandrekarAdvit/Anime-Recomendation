@@ -1,15 +1,17 @@
-// animeBack/models/Anime.js
 import mongoose from 'mongoose';
 
 const animeSchema = new mongoose.Schema({
-  Title: String,    // Note the Capital 'T'
-  synopsis: String, // Note the lowercase 's'
-  Score: Number,    // Note the Capital 'S'
-  Type: String,
-  Episodes: Number,
-  id: Number
-}, { 
-  collection: 'animes' // Points to the new collection
+    Title: String,
+    synopsis: String,
+    Score: Number,
+    Type: String,
+    Status: String,
+    Episodes: String,
+    Source: String,
+    Studios: String,
+    photo: String,      // Matches your DB
+    genres: String,     // Matches your DB String format
+    Aired: String
 });
 
 export default mongoose.model('Anime', animeSchema);
