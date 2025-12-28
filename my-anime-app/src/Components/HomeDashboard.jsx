@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+// 🚀 Step 1: Import the new DiscoveryFeed component
+import DiscoveryFeed from './DiscoveryFeed';
 
-// Ensure these props are being passed from App.js where your auth state lives
 const HomeDashboard = ({ isLoggedIn, username }) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -48,7 +49,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
         
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-black text-white/90 mb-2 tracking-tighter uppercase italic">
-            {/* Conditional Heading: Greets user if logged in */}
             {isLoggedIn ? `WELCOME BACK, ${username || 'MEMBER'}` : "WELCOME TO"}
           </h1>
           <h1 className="text-8xl md:text-[10rem] font-black tracking-tighter uppercase italic leading-none drop-shadow-2xl">
@@ -85,7 +85,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
             </div>
           ))}
 
-          {/* Slide Text Content */}
           <div className="relative z-20 w-full px-10 md:px-32">
             <div className="max-w-5xl">
               <h2 className="text-6xl md:text-9xl font-black text-white mb-8 leading-none tracking-tighter uppercase italic drop-shadow-2xl">
@@ -95,7 +94,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
                 {slides[currentSlide].desc}
               </p>
 
-              {/* ACTION BUTTONS: CONDITIONAL RENDERING HERE */}
               <div className="flex flex-col sm:flex-row gap-8">
                 <button 
                   onClick={() => navigate('/catalog')}
@@ -105,7 +103,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
                 </button>
 
                 {isLoggedIn ? (
-                  /* Shows when user is logged in */
                   <button 
                     onClick={() => navigate('/watchlist')}
                     className="px-16 py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-2xl font-black text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
@@ -113,7 +110,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
                     My Watchlist
                   </button>
                 ) : (
-                  /* Shows when user is logged out */
                   <button 
                     onClick={() => navigate('/register')}
                     className="px-16 py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-2xl font-black text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
@@ -125,7 +121,6 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
             </div>
           </div>
 
-          {/* Slide Indicators */}
           <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex gap-4 z-30">
             {slides.map((_, index) => (
               <button
@@ -139,6 +134,15 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
           </div>
         </div>
       </div>
+
+      {/* 🚀 NEW SECTION 3: PERSONALIZED DISCOVERY SECTION */}
+      {/* This will appear below the feature slider only for logged-in users */}
+      {isLoggedIn && (
+        <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <DiscoveryFeed />
+        </div>
+      )}
+      
     </div>
   );
 };

@@ -58,3 +58,10 @@ Sentiment Layer: Using BERT for Aspect-Based Sentiment Analysis (ABSA) to displa
 - **Hybrid Recommendation Engine:** Implementing the "Interest Vector" logic using Genre Frequency Analysis.
 - **Discovery Logic:** Filtering for high-quality titles (7.0+) and "Hidden Gem" (N/A) records.
 - **Genre-Specific Discovery:** Adding user-controlled "Genre Pills" for manual recommendation overrides.
+
+## ✅ Day 4 Progress: Intelligence Engine & Session Hardening
+- **Interest Vector Logic**: Implemented a backend algorithm that extracts the top 3 genres from the user's vault to drive discovery.
+- **Crash-Proof Querying**: Resolved the "Cast to Number" crash by implementing a type-aware MongoDB filter (`$type: "number"`).
+- **Compatibility Scoring**: Integrated a dynamic % match calculation based on genre overlap and global MAL ratings.
+- **Dashboard UI**: Built a full-width responsive discovery feed with a 5-column grid and compatibility badges.
+- **Extended Auth**: Updated JWT handling to support 7-day sessions for a smoother development experience.

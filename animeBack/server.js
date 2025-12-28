@@ -61,7 +61,7 @@ app.post('/api/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '7d' });
         res.json({ token, username: user.username });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -91,10 +91,6 @@ app.post('/api/watchlist/add', async (req, res) => {
     }
 });
 
-/**
- * 🚀 NEW: PERSISTENT DELETE ROUTE
- * Removes the Anime ID from the User's watchlist array in MongoDB.
- */
 app.delete('/api/watchlist/remove', async (req, res) => {
     const { animeId } = req.body;
     const token = req.headers.authorization?.split(' ')[1];
@@ -107,7 +103,6 @@ app.delete('/api/watchlist/remove', async (req, res) => {
 
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Filter the array to remove the specific Anime ID
         user.watchlist = user.watchlist.filter(id => id.toString() !== animeId);
         await user.save();
 
@@ -125,10 +120,81 @@ app.get('/api/watchlist', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
-        const user = await User.findById(decoded.id).populate('watchlist');
-        res.json(user.watchlist);
+        const user = await User.findById(decoded.id).populate('watchlist').lean();
+        res.json(user.watchlist || []);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch Vault records" });
+        console.error("🛑 Watchlist Fetch Error:", err.message);
+        res.status(500).json([]);
+    }
+});
+
+/**
+ * 🚀 INTELLIGENCE ENGINE V3: SIMPLIFIED NUMERIC LOGIC
+ * Pivoted to target ONLY numeric scores >= 7.0 to prevent Cast Errors.
+ */
+app.get('/api/recommendations', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: "Unauthorized access" });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const user = await User.findById(decoded.id).populate('watchlist');
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // 1. Interest Vector Calculation
+        const genreCounts = {};
+        user.watchlist.forEach(anime => {
+            const genresStr = anime.genres || anime.Genres || ""; 
+            if (typeof genresStr === 'string') {
+                genresStr.split(',').forEach(g => {
+                    const trimmed = g.trim();
+                    if (trimmed) genreCounts[trimmed] = (genreCounts[trimmed] || 0) + 1;
+                });
+            }
+        });
+
+        const sortedGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
+        const topUserGenres = sortedGenres.slice(0, 3).map(g => g[0]);
+
+        // Fallback for empty watchlist
+        if (user.watchlist.length === 0) {
+            const general = await Anime.find({ Score: { $type: "number", $gte: 8.0 } }).limit(10).lean();
+            return res.json(general.map(a => ({ ...a, matchScore: 75 })));
+        }
+
+        const securedIds = user.watchlist.map(a => a._id);
+        
+        // 🚀 2. THE PIVOTED QUERY: NUMERIC ONLY
+        // We explicitly use $type: "number" to ignore string "N/A" records entirely.
+        const recommendations = await Anime.find({
+            _id: { $nin: securedIds },
+            genres: { $in: topUserGenres.map(g => new RegExp(g, 'i')) },
+            Score: { $type: "number", $gte: 7.0 } // Simplified: strictly numeric >= 7.0
+        })
+        .limit(15)
+        .sort({ Score: -1 })
+        .lean();
+
+        // 3. Match Score Calculation
+        const finalRecs = recommendations.map(anime => {
+            const animeGenres = (anime.genres || "").split(',').map(g => g.trim());
+            const matchingGenreCount = animeGenres.filter(g => topUserGenres.includes(g)).length;
+
+            let matchScore = 60 + (matchingGenreCount * 12);
+            if (typeof anime.Score === 'number') matchScore += (anime.Score / 2);
+
+            return {
+                ...anime,
+                matchScore: Math.min(99, Math.round(matchScore)) 
+            };
+        });
+
+        res.json(finalRecs.sort((a, b) => b.matchScore - a.matchScore).slice(0, 10));
+
+    } catch (err) {
+        console.error("🛑 Rec Engine Error:", err.message);
+        res.status(500).json([]); // Always return array to keep frontend stable
     }
 });
 
