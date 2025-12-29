@@ -16,12 +16,11 @@ const userSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
-  // This 'watchlist' field will store the IDs of animes from 
-  // your 21,764 records once we finish Day 2!
   watchlist: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Anime' 
   }] 
 }, { timestamps: true });
 
-export default mongoose.model('User', userSchema);
+// 🚀 CHANGE: Explicitly name the collection 'animeUser'
+export default mongoose.model('User', userSchema, 'animeUser');
