@@ -65,3 +65,12 @@ Sentiment Layer: Using BERT for Aspect-Based Sentiment Analysis (ABSA) to displa
 - **Compatibility Scoring**: Integrated a dynamic % match calculation based on genre overlap and global MAL ratings.
 - **Dashboard UI**: Built a full-width responsive discovery feed with a 5-column grid and compatibility badges.
 - **Extended Auth**: Updated JWT handling to support 7-day sessions for a smoother development experience.
+
+## 🚀 Day 5: Advanced Discovery Engine
+Transformed the catalog from a static grid into a persistent, high-performance search tool.
+
+### Key Features
+* **URL Search Sync:** All filters (Search, Genre, Year, Status) are synced to URL parameters, ensuring state is preserved during browser navigation.
+* **Multi-Chip Studio Filtering:** Implemented a tag-based UI allowing users to search across multiple production studios simultaneously using Regex OR logic.
+* **Omni-Query Backend:** Consolidated all filtering logic into a single high-efficiency MongoDB query with strict type-safety for numeric scores.
+* **Advanced Media Filtering:** Added granular controls for Media Type (TV/Movie) and Airing Status (Finished/Ongoing).

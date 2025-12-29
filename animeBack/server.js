@@ -130,7 +130,6 @@ app.get('/api/watchlist', async (req, res) => {
 
 /**
  * 🚀 INTELLIGENCE ENGINE V3: SIMPLIFIED NUMERIC LOGIC
- * Pivoted to target ONLY numeric scores >= 7.0 to prevent Cast Errors.
  */
 app.get('/api/recommendations', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -142,7 +141,6 @@ app.get('/api/recommendations', async (req, res) => {
 
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // 1. Interest Vector Calculation
         const genreCounts = {};
         user.watchlist.forEach(anime => {
             const genresStr = anime.genres || anime.Genres || ""; 
@@ -157,33 +155,28 @@ app.get('/api/recommendations', async (req, res) => {
         const sortedGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
         const topUserGenres = sortedGenres.slice(0, 3).map(g => g[0]);
 
-        // Fallback for empty watchlist
         if (user.watchlist.length === 0) {
+            // Updated fallback with type-safety
             const general = await Anime.find({ Score: { $type: "number", $gte: 8.0 } }).limit(10).lean();
             return res.json(general.map(a => ({ ...a, matchScore: 75 })));
         }
 
         const securedIds = user.watchlist.map(a => a._id);
         
-        // 🚀 2. THE PIVOTED QUERY: NUMERIC ONLY
-        // We explicitly use $type: "number" to ignore string "N/A" records entirely.
         const recommendations = await Anime.find({
             _id: { $nin: securedIds },
             genres: { $in: topUserGenres.map(g => new RegExp(g, 'i')) },
-            Score: { $type: "number", $gte: 7.0 } // Simplified: strictly numeric >= 7.0
+            Score: { $type: "number", $gte: 7.0 } 
         })
         .limit(15)
         .sort({ Score: -1 })
         .lean();
 
-        // 3. Match Score Calculation
         const finalRecs = recommendations.map(anime => {
             const animeGenres = (anime.genres || "").split(',').map(g => g.trim());
             const matchingGenreCount = animeGenres.filter(g => topUserGenres.includes(g)).length;
-
             let matchScore = 60 + (matchingGenreCount * 12);
             if (typeof anime.Score === 'number') matchScore += (anime.Score / 2);
-
             return {
                 ...anime,
                 matchScore: Math.min(99, Math.round(matchScore)) 
@@ -194,38 +187,54 @@ app.get('/api/recommendations', async (req, res) => {
 
     } catch (err) {
         console.error("🛑 Rec Engine Error:", err.message);
-        res.status(500).json([]); // Always return array to keep frontend stable
+        res.status(500).json([]); 
     }
 });
 
-// --- 6. Anime Catalog Routes ---
+// --- 6. 🚀 UPDATED DAY 5: ADVANCED CATALOG ROUTES ---
 
 app.get('/api/animes', async (req, res) => {
     try {
-        const { search, limit, skip, sort, year, genre } = req.query; 
+        // 1. Destructure extended filters from Day 5 frontend
+        const { search, limit, skip, sort, year, genre, studio, type, status } = req.query; 
         let query = {};
         
+        // 2. Omni-Search Regex matching
         if (search?.trim()) query.Title = { $regex: search, $options: 'i' }; 
         if (genre?.trim()) query.genres = { $regex: genre, $options: 'i' }; 
 
+        // 3. Multi-Chip Studio Support (Regex OR logic)
+        if (studio?.trim()) query.Studios = { $regex: studio, $options: 'i' };
+
+        // 4. Media Type & Status filters
+        if (type?.trim()) query.Type = type;
+        if (status?.trim()) query.Status = status;
+
+        // 5. Enhanced Year/Era Logic
         if (year) {
             year === 'Earlier' 
                 ? query["Aired From"] = { $lt: "1980-01-01" } 
-                : query["Aired From"] = { $regex: `^${year.substring(0, 3)}`, $options: 'i' };
+                : query["Aired From"] = { $regex: `^${year.substring(0, 4)}`, $options: 'i' };
         }
 
-        let sortOptions = { Title: 1 };
+        // 6. Global Score Safety
+        // Strictly numeric to prevent sorting crashes on "N/A" data.
+        query.Score = { $type: "number" };
+
+        let sortOptions = { Popularity: 1 };
         if (sort === 'Score') sortOptions = { Score: -1 }; 
-        else if (sort === 'Popularity') sortOptions = { Popularity: 1 }; 
         else if (sort === 'RecentlyAdded') sortOptions = { "Aired From": -1 }; 
+        else if (sort === 'Title') sortOptions = { Title: 1 };
 
         const animes = await Anime.find(query)
             .sort(sortOptions)
             .skip(Number(skip) || 0)
-            .limit(Number(limit) || 20);
+            .limit(Number(limit) || 20)
+            .lean(); // Faster performance
 
         res.json(animes);
     } catch (err) {
+        console.error("🛑 Day 5 Catalog Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -252,11 +261,12 @@ app.get('/api/animes/:id/similar', async (req, res) => {
         const primaryGenre = rawGenres.split(',')[0].trim();
         const similarAnimes = await Anime.find({
             _id: { $ne: id },
+            Score: { $type: "number" }, // Type safety
             $or: [
                 { genres: { $regex: primaryGenre, $options: 'i' } },
                 { Genres: { $regex: primaryGenre, $options: 'i' } }
             ]
-        }).limit(5);
+        }).limit(5).lean();
 
         res.json(similarAnimes);
     } catch (err) {
