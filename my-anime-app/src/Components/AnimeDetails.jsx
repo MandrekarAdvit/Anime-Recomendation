@@ -164,7 +164,7 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
 
             {/* TECH INFO GRID */}
             <section className="mb-24">
-              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Technical Profile</h3>
+              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Anime Profile</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-emerald-900/20 rounded-[2.5rem] overflow-hidden border border-emerald-900/20">
                 {[
                   { label: "Studio", value: anime.Studios || "Unknown" },
@@ -184,10 +184,10 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
           {/* 🚀 NEW: NEURAL LINK (SIDEBAR BOX) */}
           {isLoggedIn && isInVault && (
             <aside className="bg-gray-950/80 border-2 border-emerald-500/20 p-10 rounded-[3rem] sticky top-44 animate-in fade-in slide-in-from-right duration-1000 shadow-[0_0_50px_rgba(16,185,129,0.05)]">
-              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Neural Link</h3>
+              <h3 className="text-[17px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Review</h3>
               
               <div className="mb-8">
-                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Personal Frequency (1-10)</label>
+                <label className="text-[14px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Personal Rating (1-10)</label>
                 <input 
                   type="range" min="1" max="10" step="1" 
                   value={userRating} 
@@ -196,16 +196,15 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
                 />
                 <div className="flex justify-between mt-4">
                   <span className="text-4xl font-black italic text-emerald-400">{userRating || "?"}</span>
-                  <span className="text-white/20 font-black text-[10px] uppercase pt-4">Neural Tuning</span>
                 </div>
               </div>
 
               <div className="mb-8">
-                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Encrypted Note (Log)</label>
+                <label className="text-[14px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Log note</label>
                 <textarea 
                   value={userNote}
                   onChange={(e) => setUserNote(e.target.value)}
-                  placeholder="Record your neural observations..."
+                  placeholder="Write your log review..."
                   className="w-full h-32 bg-black/50 border border-emerald-900/30 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-emerald-500 text-gray-300 resize-none"
                 />
               </div>
@@ -215,7 +214,7 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
                 disabled={isSyncingReview}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase text-[12px] tracking-[0.2em] rounded-2xl transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
               >
-                {isSyncingReview ? 'Establishing Link...' : 'Sync Neural Data'}
+                {isSyncingReview ? 'Establishing...' : 'Post Review'}
               </button>
             </aside>
           )}
@@ -224,7 +223,7 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
         {/* SIMILAR RECORDS */}
         <section className="pt-24 border-t border-emerald-900/20">
           <div className="flex items-center gap-8 mb-16">
-            <h2 className="text-4xl font-black italic uppercase text-white">Neural Matches</h2>
+            <h2 className="text-4xl font-black italic uppercase text-white">Similar</h2>
             <div className="h-px flex-grow bg-emerald-900/30" />
           </div>
 
