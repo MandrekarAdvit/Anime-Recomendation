@@ -19,8 +19,31 @@ const userSchema = new mongoose.Schema({
   watchlist: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Anime' 
-  }] 
+  }],
+  
+  // 🚀 NEW: Neural Reviews Field
+  // Stores personal ratings and notes for specific records
+  reviews: [{
+    animeId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Anime', 
+      required: true 
+    },
+    rating: { 
+      type: Number, 
+      min: 1, 
+      max: 10 
+    },
+    note: { 
+      type: String, 
+      maxLength: 500 
+    },
+    updatedAt: { 
+      type: Date, 
+      default: Date.now 
+    }
+  }]
 }, { timestamps: true });
 
-// 🚀 CHANGE: Explicitly name the collection 'animeUser'
+// 🚀 Explicitly targeting the 'animeUser' collection
 export default mongoose.model('User', userSchema, 'animeUser');

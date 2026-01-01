@@ -10,7 +10,11 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🚀 Derive status from global state prop
+  // 🚀 NEW: Neural Review States
+  const [userRating, setUserRating] = useState(0);
+  const [userNote, setUserNote] = useState("");
+  const [isSyncingReview, setIsSyncingReview] = useState(false);
+
   const isInVault = watchlist?.some(item => String(item._id) === String(id));
 
   useEffect(() => {
@@ -24,6 +28,19 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
         const simRes = await fetch(`http://localhost:5000/api/animes/${id}/similar`);
         const simData = await simRes.json();
         setSimilar(simData);
+
+        // 🚀 NEW: Fetch existing review if logged in
+        if (isLoggedIn) {
+          const token = localStorage.getItem('token');
+          const revRes = await fetch(`http://localhost:5000/api/watchlist/review/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            setUserRating(revData.rating || 0);
+            setUserNote(revData.note || "");
+          }
+        }
       } catch (err) {
         console.error("Vault access denied:", err);
       } finally {
@@ -31,25 +48,40 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
       }
     };
     if (id) fetchData();
-  }, [id]);
+  }, [id, isLoggedIn]);
 
-  /**
-   * 🚀 REFINED HANDLER
-   * We no longer do a local 'fetch' here. 
-   * We call the parent's centralized 'addToWatchlist' which handles the DB sync.
-   */
   const handleVaultSync = async () => {
     try {
       setIsSaving(true);
-      // Calls the logic in App.js which handles:
-      // 1. Database POST
-      // 2. Error handling (Already secured check)
-      // 3. Global state update
       await addToWatchlist(anime); 
     } catch (err) {
       console.error("Sync delegation failed:", err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 🚀 NEW: Sync Review to Backend
+  const handleReviewSync = async () => {
+    try {
+      setIsSyncingReview(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/watchlist/review', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ animeId: id, rating: userRating, note: userNote })
+      });
+
+      if (res.ok) {
+        console.log("✅ Neural Link Synchronized");
+      }
+    } catch (err) {
+      console.error("Review sync failed:", err);
+    } finally {
+      setIsSyncingReview(false);
     }
   };
 
@@ -59,7 +91,7 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
   return (
     <div className="min-h-screen bg-black text-white px-6 md:px-20 pt-44 pb-20 selection:bg-emerald-500 selection:text-black">
       
-      {/* 🔙 NAVIGATION & ACTION BAR */}
+      {/* NAVIGATION & ACTION BAR */}
       <div className="max-w-7xl mx-auto mb-16 flex justify-between items-center">
         <button 
           onClick={() => navigate(-1)} 
@@ -69,7 +101,6 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
           Back to Catalogue
         </button>
 
-        {/* 🚀 ACTION UI */}
         {isLoggedIn ? (
           isInVault ? (
             <div className="px-8 py-3 bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 font-black uppercase text-[12px] tracking-[0.2em] rounded-full flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
@@ -94,8 +125,8 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
         )}
       </div>
       
-      {/* Rest of the UI (Header, Synopsis, Tech Grid, Similar) remains identical */}
       <div className="max-w-7xl mx-auto">
+        {/* HEADER SECTION */}
         <header className="mb-16">
           <div className="flex flex-wrap gap-3 mb-8">
             {anime.genres?.split(',').map(genre => (
@@ -121,33 +152,79 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
           </div>
         </header>
 
-        <section className="mb-24">
-          <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Synopsis</h3>
-          <p className="text-gray-300 text-2xl md:text-3xl leading-snug font-medium max-w-6xl italic border-l-4 border-emerald-500/30 pl-10">
-            {anime.synopsis || "No detailed dossier available for this title."}
-          </p>
-        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start">
+          <div className="lg:col-span-2">
+            {/* SYNOPSIS */}
+            <section className="mb-24">
+              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Synopsis</h3>
+              <p className="text-gray-300 text-2xl md:text-3xl leading-snug font-medium border-l-4 border-emerald-500/30 pl-10 italic">
+                {anime.synopsis || "No detailed dossier available for this title."}
+              </p>
+            </section>
 
-        <section className="mb-40">
-          <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Additional information</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-emerald-900/20 rounded-[2.5rem] overflow-hidden border border-emerald-900/20">
-            {[
-              { label: "Studio", value: anime.Studios || "Unknown" },
-              { label: "Runtime", value: `${anime.Episodes || "?"} Eps` },
-              { label: "Status", value: anime.Status || "Finished" },
-              { label: "Origin", value: anime.Source || "Original" },
-            ].map((item, index) => (
-              <div key={index} className="bg-gray-950/80 p-10 flex flex-col justify-center text-center group hover:bg-emerald-900/10 transition-colors">
-                <h5 className="text-[13px] font-black text-emerald-700 uppercase mb-3 tracking-widest italic group-hover:text-emerald-500 transition-colors">{item.label}</h5>
-                <p className="text-xl font-bold uppercase text-white tracking-tighter">{item.value}</p>
+            {/* TECH INFO GRID */}
+            <section className="mb-24">
+              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Technical Profile</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-emerald-900/20 rounded-[2.5rem] overflow-hidden border border-emerald-900/20">
+                {[
+                  { label: "Studio", value: anime.Studios || "Unknown" },
+                  { label: "Runtime", value: `${anime.Episodes || "?"} Eps` },
+                  { label: "Status", value: anime.Status || "Finished" },
+                  { label: "Origin", value: anime.Source || "Original" },
+                ].map((item, index) => (
+                  <div key={index} className="bg-gray-950/80 p-10 flex flex-col justify-center text-center hover:bg-emerald-900/10 transition-colors">
+                    <h5 className="text-[13px] font-black text-emerald-700 uppercase mb-3 tracking-widest italic">{item.label}</h5>
+                    <p className="text-xl font-bold uppercase text-white tracking-tighter">{item.value}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </section>
           </div>
-        </section>
 
+          {/* 🚀 NEW: NEURAL LINK (SIDEBAR BOX) */}
+          {isLoggedIn && isInVault && (
+            <aside className="bg-gray-950/80 border-2 border-emerald-500/20 p-10 rounded-[3rem] sticky top-44 animate-in fade-in slide-in-from-right duration-1000 shadow-[0_0_50px_rgba(16,185,129,0.05)]">
+              <h3 className="text-[14px] font-black text-emerald-500 uppercase tracking-[0.5em] mb-8 italic">Neural Link</h3>
+              
+              <div className="mb-8">
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Personal Frequency (1-10)</label>
+                <input 
+                  type="range" min="1" max="10" step="1" 
+                  value={userRating} 
+                  onChange={(e) => setUserRating(Number(e.target.value))}
+                  className="w-full accent-emerald-500 h-1 bg-emerald-900/20 rounded-full appearance-none cursor-pointer" 
+                />
+                <div className="flex justify-between mt-4">
+                  <span className="text-4xl font-black italic text-emerald-400">{userRating || "?"}</span>
+                  <span className="text-white/20 font-black text-[10px] uppercase pt-4">Neural Tuning</span>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest mb-4 block">Encrypted Note (Log)</label>
+                <textarea 
+                  value={userNote}
+                  onChange={(e) => setUserNote(e.target.value)}
+                  placeholder="Record your neural observations..."
+                  className="w-full h-32 bg-black/50 border border-emerald-900/30 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-emerald-500 text-gray-300 resize-none"
+                />
+              </div>
+
+              <button 
+                onClick={handleReviewSync}
+                disabled={isSyncingReview}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase text-[12px] tracking-[0.2em] rounded-2xl transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+              >
+                {isSyncingReview ? 'Establishing Link...' : 'Sync Neural Data'}
+              </button>
+            </aside>
+          )}
+        </div>
+
+        {/* SIMILAR RECORDS */}
         <section className="pt-24 border-t border-emerald-900/20">
           <div className="flex items-center gap-8 mb-16">
-            <h2 className="text-4xl font-black italic uppercase text-white">You may also be interested in</h2>
+            <h2 className="text-4xl font-black italic uppercase text-white">Neural Matches</h2>
             <div className="h-px flex-grow bg-emerald-900/30" />
           </div>
 
@@ -158,15 +235,12 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
                 onClick={() => { navigate(`/animes/${item._id}`); window.scrollTo(0,0); }}
                 className="group cursor-pointer p-8 bg-gray-950/50 rounded-3xl border border-emerald-900/20 hover:border-emerald-500/50 hover:bg-emerald-900/5 transition-all duration-300 flex flex-col h-full"
               >
-                <h4 className="text-xl font-black uppercase text-gray-300 group-hover:text-emerald-400 leading-none tracking-tight mb-6 transition-colors">
+                <h4 className="text-xl font-black uppercase text-gray-300 group-hover:text-emerald-400 leading-none tracking-tight mb-6 transition-colors line-clamp-2">
                   {item.Title}
                 </h4>
                 <div className="mt-auto flex flex-wrap gap-2">
                   {item.genres?.split(',').slice(0, 3).map((genre, index) => (
-                    <span 
-                      key={index} 
-                      className="px-3 py-1.5 text-[13px] font-bold uppercase tracking-widest text-emerald-500/70 bg-emerald-900/10 rounded-lg whitespace-nowrap border border-emerald-900/10"
-                    >
+                    <span key={index} className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-emerald-500/70 bg-emerald-900/10 rounded-lg border border-emerald-900/10">
                       {genre.trim()}
                     </span>
                   ))}

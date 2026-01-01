@@ -77,7 +77,6 @@ const App = () => {
       } 
       else if (res.status === 400 && data.message.includes("already secured")) {
         setWatchlist((prev) => [...prev, anime]);
-        console.log("🔄 UI Catch-up: Syncing local state with existing DB record.");
       } 
       else {
         alert(data.message || "Failed to sync with Vault.");
@@ -87,16 +86,11 @@ const App = () => {
     }
   };
 
-  /**
-   * 🚀 UPDATED: REMOVE FROM WATCHLIST (Centralized Async Logic)
-   * Handles both the Backend DELETE and Frontend State update
-   */
   const removeFromWatchlist = async (anime) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-      // A. Sync with MongoDB Backend
       const res = await fetch('http://localhost:5000/api/watchlist/remove', {
         method: 'DELETE',
         headers: { 
@@ -107,12 +101,8 @@ const App = () => {
       });
 
       if (res.ok) {
-        // B. Update local state only if backend confirms success
         setWatchlist((prev) => prev.filter((item) => String(item._id) !== String(anime._id)));
-        console.log(`🗑️ VAULT UPDATE: Expunged ${anime.Title} from Database and local State.`);
-      } else {
-        const data = await res.json();
-        alert(data.message || "Failed to expunge record from Vault.");
+        console.log(`🗑️ VAULT UPDATE: Expunged ${anime.Title} records.`);
       }
     } catch (err) {
       console.error("Critical Removal Sync Error:", err);
@@ -151,9 +141,13 @@ const App = () => {
             />
           } />
           
+          {/* ✅ CLEANED: Passing only required props to WatchlistPage */}
           <Route path="/watchlist" element={
             <ProtectedRoute>
-              <WatchlistPage watchlist={watchlist} removeFromWatchlist={removeFromWatchlist} />
+              <WatchlistPage 
+                watchlist={watchlist} 
+                removeFromWatchlist={removeFromWatchlist} 
+              />
             </ProtectedRoute>
           } />
           
