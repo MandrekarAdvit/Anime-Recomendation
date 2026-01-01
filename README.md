@@ -1,76 +1,74 @@
-#  MERN Anime & Movie Catalog
-A high-performance full-stack application built to manage and browse a massive library of over **21,700 anime records**.
+# 💎 AnimeVault: Neural Intelligence & Record Management System
 
-## Project Overview
-This project focuses on handling large-scale datasets in a cloud environment. I migrated a local 21,764-record JSON dataset to **MongoDB Atlas** and built a responsive UI to interact with this data in real-time.
+**AnimeVault** is a high-performance MERN stack application designed for anime enthusiasts to manage their personal watchlists with a "cyber-vault" aesthetic. It features a neural recommendation engine, real-time analytics, and a fully responsive terminal-style interface.
 
-###  Key Engineering Decision: Data-Centric UI
-During development, I encountered rate-limiting challenges (HTTP 429) when fetching external posters for 21,000+ entries. I made the strategic decision to implement a **minimalist, data-heavy card design**. This optimized application performance, reduced external dependencies, and focused on providing immediate information density (Scores, Episodes, and Synopses).
+---
 
-##  Tech Stack
-- **Frontend**: React.js, Tailwind CSS (Dark Theme).
-- **Backend**: Node.js, Express.js.
-- **Database**: MongoDB Atlas (Cloud Cluster).
-- **State Management**: React Context API (Planned).
+## 🚀 Live Demo
+- **Frontend (Vercel):** [Your-Vercel-URL-Here]
+- **Backend API (Render):** [Your-Render-URL-Here]
 
-##  Features
-- **Massive Dataset**: Queries 21,764 anime records from the cloud.
-- **Optimized Search**: Backend regex search targeting the `Title` field for instant results.
-- **Clean Metadata**: Display of Score, Type, Episode count, and Synopsis for every entry.
+---
 
-##  Project Structure
-- `/animeBack`: Express server and Mongoose models (`Anime.js`, `User.js`).
-- `/my-anime-app`: React frontend with Tailwind-styled components.
+## 🛠️ Technical Architecture
 
-###  Update: Dec 23, 2025
-**Accomplishments:**
-* **Theme Synchronization**: Successfully implemented a unified "Emerald-on-Black" aesthetic across the Dashboard, Catalogue, and Vault.
-* **Dynamic Pagination**: Added "Load More" functionality to efficiently browse 21,700+ records using backend `limit` and `skip` logic.
-* **Routing Overhaul**: Replaced text placeholders with functional React Router paths for Login, Signup, and dynamic Anime Details.
+### **Frontend**
+- **React (Vite):** Ultra-fast frontend framework for a seamless SPA experience.
+- **Tailwind CSS:** Custom-themed utility-first CSS for the "Vault" UI.
+- **Chart.js:** Data visualization for user genre distribution and era analytics.
+- **React Router:** URL-state driven filtering and navigation.
 
-### Update: DEC 24, 2025
-**Accomplishments:**
-* **Authentication & Identity**: Fully functional JWT-based login and signup system with protected routing.
-* **Catalogue discovery**: High-performance browsing interface for a library of over 21,700 records.
-* **Smart Search & Filters**: Multi-tier filtering based on Eras, Genres, and Vault Scores.
-* **Reactive UI Logic**: Implemented "Deep Clean" logout functionality that resets global state and clears local persistence instantly.
-* **Access Guard**: Integrated a professional modal interceptor that prevents guest users from saving to the vault, encouraging account creation.
+### **Backend**
+- **Node.js & Express:** Scalable server architecture.
+- **JWT (JSON Web Tokens):** Secure session management and encrypted authentication.
+- **Mongoose:** Object Data Modeling for MongoDB interactions.
 
-**Refined Recommendation Strategy**
-To ensure the project is both impactful and efficient for a passion project, the recommendation engine will use a Hybrid Content-Based Filtering approach:
-Metadata Soup: Combining Synopsis, Genres, and Studios into a single textual feature.
-TF-IDF Vectorization: Converting textual content into numerical vectors for similarity comparison.
-Cosine Similarity: Calculating the relatedness between titles to suggest accurate "Next Watches".
-Sentiment Layer: Using BERT for Aspect-Based Sentiment Analysis (ABSA) to display "Vibe Scores" (Animation, Story, Pacing) on the details page.
+### **Database**
+- **MongoDB Atlas:** Cloud-hosted NoSQL database for flexible anime record storage.
 
-## 🚀 Project Status: Day 3 Completed
+---
 
-### Key Achievements Today:
-- **Centralized Vault Management:** Shifted state control to `App.js` to ensure a "Single Source of Truth" across all components.
-- **Full-Stack Persistence:** Replaced `localStorage` with a MongoDB-backed Watchlist system.
-- **Dynamic UI States:** Implemented real-time button-to-tag transitions in `AnimeDetails.jsx` based on database synchronization.
-- **Secure CRUD Operations:** Built `POST` and `DELETE` backend routes to manage user-specific "Secured Records" with JWT authentication.
+## 🧠 Key Features
 
-### Current Architecture:
+### 1. **The Catalogue (Smart Filtering)**
+An advanced search interface with URL-synced filtering. Users can filter by **Studio**, **Genre**, **Year**, and **Status** simultaneously. The system uses a pipe-separated URL state to allow for shareable filtered views.
 
+### 2. **Neural Match Engine**
+A backend algorithm that analyzes the primary genre of any selected anime to provide "Neural Matches." It calculates similarity scores based on genre overlap and global score rankings.
 
-### Next Milestone (Day 4):
-- **Hybrid Recommendation Engine:** Implementing the "Interest Vector" logic using Genre Frequency Analysis.
-- **Discovery Logic:** Filtering for high-quality titles (7.0+) and "Hidden Gem" (N/A) records.
-- **Genre-Specific Discovery:** Adding user-controlled "Genre Pills" for manual recommendation overrides.
+### 3. **Intelligence Feed**
+A personalized recommendation system that calculates a **Match Score** (0-99%) for users based on their existing watchlist. It uses frequency-based genre counting to prioritize recommendations that fit the user's specific taste.
 
-## ✅ Day 4 Progress: Intelligence Engine & Session Hardening
-- **Interest Vector Logic**: Implemented a backend algorithm that extracts the top 3 genres from the user's vault to drive discovery.
-- **Crash-Proof Querying**: Resolved the "Cast to Number" crash by implementing a type-aware MongoDB filter (`$type: "number"`).
-- **Compatibility Scoring**: Integrated a dynamic % match calculation based on genre overlap and global MAL ratings.
-- **Dashboard UI**: Built a full-width responsive discovery feed with a 5-column grid and compatibility badges.
-- **Extended Auth**: Updated JWT handling to support 7-day sessions for a smoother development experience.
+### 4. **Vault Analytics Dashboard**
+An interactive terminal for users to visualize their habits. 
+- **Genre Spread:** A pie chart showing the distribution of genres in their vault.
+- **Era Chronology:** A bar chart tracking the decades (90s, 2000s, etc.) of their saved records.
 
-## 🚀 Day 5: Advanced Discovery Engine
-Transformed the catalog from a static grid into a persistent, high-performance search tool.
+### 5. **Responsive Terminal UI**
+A mobile-first design featuring a persistent "Terminal Drawer" navigation, animated logo abbreviations, and adaptive grid layouts for the ultimate cross-device experience.
 
-### Key Features
-* **URL Search Sync:** All filters (Search, Genre, Year, Status) are synced to URL parameters, ensuring state is preserved during browser navigation.
-* **Multi-Chip Studio Filtering:** Implemented a tag-based UI allowing users to search across multiple production studios simultaneously using Regex OR logic.
-* **Omni-Query Backend:** Consolidated all filtering logic into a single high-efficiency MongoDB query with strict type-safety for numeric scores.
-* **Advanced Media Filtering:** Added granular controls for Media Type (TV/Movie) and Airing Status (Finished/Ongoing).
+---
+
+## 📦 Installation & Setup
+
+1. **Clone the Repository**
+   ```bash
+   git clone [https://github.com/MandrekarAdvit/Anime-Recomendation.git](https://github.com/MandrekarAdvit/Anime-Recomendation.git)
+
+2. **Backend Setup**
+
+Navigate to animeBack.
+
+Create a mong.env file.
+
+Add MONGO_URI and JWT_SECRET.
+
+Run npm install and npm start.
+
+3. **Frontend Setup**
+
+Navigate to my-anime-app.
+
+Run npm install.
+
+Run npm run dev.   
