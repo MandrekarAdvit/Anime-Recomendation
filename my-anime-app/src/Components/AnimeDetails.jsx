@@ -21,18 +21,21 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:5000/api/animes/${id}`);
+        // REPLACED LOCALHOST WITH DYNAMIC API_URL
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+        const res = await fetch(`${API_URL}/api/animes/${id}`);
         const data = await res.json();
         setAnime(data);
 
-        const simRes = await fetch(`http://localhost:5000/api/animes/${id}/similar`);
+        const simRes = await fetch(`${API_URL}/api/animes/${id}/similar`);
         const simData = await simRes.json();
         setSimilar(simData);
 
         // 🚀 NEW: Fetch existing review if logged in
         if (isLoggedIn) {
           const token = localStorage.getItem('token');
-          const revRes = await fetch(`http://localhost:5000/api/watchlist/review/${id}`, {
+          const revRes = await fetch(`${API_URL}/api/watchlist/review/${id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (revRes.ok) {
@@ -66,7 +69,10 @@ const AnimeDetails = ({ watchlist, addToWatchlist, isLoggedIn }) => {
     try {
       setIsSyncingReview(true);
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/watchlist/review', {
+      // REPLACED LOCALHOST WITH DYNAMIC API_URL
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      const res = await fetch(`${API_URL}/api/watchlist/review`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

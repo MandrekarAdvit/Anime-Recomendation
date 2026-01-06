@@ -15,9 +15,13 @@ const DiscoveryFeed = () => {
 
     try {
       setLoading(true);
+      
+      // REPLACED LOCALHOST WITH DYNAMIC API_URL
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
       const url = genre === 'For You' 
-        ? 'http://localhost:5000/api/recommendations' 
-        : `http://localhost:5000/api/animes?genre=${genre}&limit=10&sort=Score`;
+        ? `${API_URL}/api/recommendations` 
+        : `${API_URL}/api/animes?genre=${genre}&limit=10&sort=Score`;
 
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -55,7 +59,6 @@ const DiscoveryFeed = () => {
             <button
               key={pill}
               onClick={() => setActiveGenre(pill)}
-              // 🚀 UPDATED: Text size set to 15px per request
               className={`px-8 py-2.5 rounded-full text-[15px] font-black uppercase tracking-widest transition-all border-2 ${
                 activeGenre === pill 
                 ? 'bg-emerald-500 border-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.4)]' 
@@ -88,7 +91,6 @@ const DiscoveryFeed = () => {
                   <div className="h-1.5 w-12 bg-emerald-500 rounded-full" />
                   <div className="flex flex-col items-end">
                     <span className="text-[12px] font-black text-emerald-500/50 uppercase tracking-tighter mb-1">Compatibility</span>
-                    {/* 🚀 FIXED: Replaced ??% with a stylized '---' or 'NEW' tag if score is missing */}
                     <span className="text-2xl font-black italic text-emerald-500 leading-none">
                       {anime.matchScore ? `${anime.matchScore}%` : <span className="text-sm tracking-widest opacity-40">— —</span>}
                     </span>

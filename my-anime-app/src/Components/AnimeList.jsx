@@ -58,7 +58,9 @@ const AnimeList = ({ watchlist, addToWatchlist, removeFromWatchlist, isLoggedIn 
       try {
         setLoading(true);
         const studioQuery = selectedStudios.join('|');
-        const url = `http://localhost:5000/api/animes?search=${searchTerm}&limit=20&skip=0&sort=${sortBy}&year=${yearFilter}&genre=${genreFilter}&type=${typeFilter}&status=${statusFilter}&studio=${studioQuery}`;
+        // REPLACED LOCALHOST WITH DYNAMIC API_URL
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const url = `${API_URL}/api/animes?search=${searchTerm}&limit=20&skip=0&sort=${sortBy}&year=${yearFilter}&genre=${genreFilter}&type=${typeFilter}&status=${statusFilter}&studio=${studioQuery}`;
         const response = await fetch(url);
         const data = await response.json();
         const unique = Array.from(new Map(data.map(item => [item._id, item])).values());
@@ -80,7 +82,9 @@ const AnimeList = ({ watchlist, addToWatchlist, removeFromWatchlist, isLoggedIn 
       setLoading(true);
       const skip = animeData.length;
       const studioQuery = selectedStudios.join('|');
-      const url = `http://localhost:5000/api/animes?search=${searchTerm}&limit=20&skip=${skip}&sort=${sortBy}&year=${yearFilter}&genre=${genreFilter}&type=${typeFilter}&status=${statusFilter}&studio=${studioQuery}`;
+      // REPLACED LOCALHOST WITH DYNAMIC API_URL
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const url = `${API_URL}/api/animes?search=${searchTerm}&limit=20&skip=${skip}&sort=${sortBy}&year=${yearFilter}&genre=${genreFilter}&type=${typeFilter}&status=${statusFilter}&studio=${studioQuery}`;
       const response = await fetch(url);
       const newData = await response.json();
       if (newData.length > 0) {
