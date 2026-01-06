@@ -84,21 +84,22 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
             </div>
           ))}
 
-          {/* Content Wrapper: Adjusted padding and text alignment for mobile */}
+          {/* Content Wrapper */}
           <div className="relative z-20 w-full px-6 md:px-32 text-center md:text-left">
             <div className="max-w-5xl">
               <h2 className="text-4xl sm:text-6xl md:text-9xl font-black text-white mb-4 md:mb-8 leading-none tracking-tighter uppercase italic drop-shadow-2xl">
                 {slides[currentSlide].title}
               </h2>
-              <p className="text-gray-300 text-base md:text-4xl font-semibold mb-8 md:mb-16 leading-relaxed max-w-3xl drop-shadow-lg mx-auto md:mx-0">
+              {/* Added a min-height to the description to prevent buttons from shifting between slides */}
+              <p className="text-gray-300 text-base md:text-4xl font-semibold mb-8 md:mb-16 leading-relaxed max-w-3xl drop-shadow-lg mx-auto md:mx-0 min-h-[3.5em] md:min-h-0">
                 {slides[currentSlide].desc}
               </p>
 
-              {/* Responsive Buttons: Stack on mobile, row on desktop */}
-              <div className="flex flex-col sm:flex-row gap-4 md:gap-8 justify-center md:justify-start">
+              {/* Responsive Buttons: Use z-index and relative positioning to ensure they are clickable and stable */}
+              <div className="relative z-50 flex flex-col sm:flex-row gap-4 md:gap-8 justify-center md:justify-start mt-8 md:mt-12">
                 <button 
                   onClick={() => navigate('/catalog')}
-                  className="px-8 md:px-16 py-4 md:py-6 bg-emerald-600 hover:bg-emerald-500 text-black rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(16,185,129,0.3)]"
+                  className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-emerald-600 hover:bg-emerald-500 text-black rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(16,185,129,0.3)]"
                 >
                   Explore Catalog
                 </button>
@@ -106,14 +107,14 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
                 {isLoggedIn ? (
                   <button 
                     onClick={() => navigate('/watchlist')}
-                    className="px-8 md:px-16 py-4 md:py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
+                    className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-black/40 backdrop-blur-md hover:bg-emerald-900/20 text-emerald-400 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
                   >
                     My Watchlist
                   </button>
                 ) : (
                   <button 
                     onClick={() => navigate('/register')}
-                    className="px-8 md:px-16 py-4 md:py-6 bg-transparent hover:bg-emerald-900/10 text-emerald-400 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
+                    className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-black/40 backdrop-blur-md hover:bg-emerald-900/20 text-emerald-400 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl uppercase tracking-widest border-2 border-emerald-600 transition-all transform hover:scale-105"
                   >
                     Join Now
                   </button>
@@ -122,7 +123,7 @@ const HomeDashboard = ({ isLoggedIn, username }) => {
             </div>
           </div>
 
-          {/* Pagination Indicators: Responsive widths */}
+          {/* Pagination Indicators */}
           <div className="absolute bottom-8 md:bottom-12 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-4 z-30">
             {slides.map((_, index) => (
               <button

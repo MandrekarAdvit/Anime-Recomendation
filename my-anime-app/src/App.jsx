@@ -16,6 +16,10 @@ const App = () => {
   const [username, setUsername] = useState("");
   const [watchlist, setWatchlist] = useState([]); 
 
+  // --- DYNAMIC API URL CONFIGURATION ---
+  // Uses Vercel environment variable in production, fallback to localhost for dev
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   // --- 2. SESSION INITIALIZATION ---
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -32,7 +36,8 @@ const App = () => {
       const token = localStorage.getItem('token');
       if (isLoggedIn && token) {
         try {
-          const res = await fetch('http://localhost:5000/api/watchlist', {
+          // REPLACED LOCALHOST WITH DYNAMIC API_URL
+          const res = await fetch(`${API_URL}/api/watchlist`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -45,7 +50,7 @@ const App = () => {
       }
     };
     syncVaultWithDB();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, API_URL]);
 
   // --- 4. PERSISTENCE SYNC (Local Fallback) ---
   useEffect(() => {
@@ -60,7 +65,8 @@ const App = () => {
     if (watchlist.some(a => String(a._id) === String(anime._id))) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/watchlist/add', {
+      // REPLACED LOCALHOST WITH DYNAMIC API_URL
+      const res = await fetch(`${API_URL}/api/watchlist/add`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -91,7 +97,8 @@ const App = () => {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/watchlist/remove', {
+      // REPLACED LOCALHOST WITH DYNAMIC API_URL
+      const res = await fetch(`${API_URL}/api/watchlist/remove`, {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
@@ -141,7 +148,6 @@ const App = () => {
             />
           } />
           
-          {/* ✅ CLEANED: Passing only required props to WatchlistPage */}
           <Route path="/watchlist" element={
             <ProtectedRoute>
               <WatchlistPage 
