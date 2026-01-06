@@ -24,7 +24,10 @@ if (fs.existsSync(envFile)) {
 const app = express();
 
 // 2. Middleware
-app.use(cors()); 
+app.use(cors({
+    origin: ["https://anime-recomendation.vercel.app", "http://localhost:5173"], 
+    credentials: true
+}));
 app.use(express.json());
 
 // --- 3. JWT Authentication Middleware ---
@@ -32,7 +35,7 @@ const authenticateToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ message: "Unauthorized access" });
 
-    jwt.verify(token, process.env.JWT_SECRET || 'secret_key', (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ message: "Session expired. Please login." });
         req.user = user;
         next();
@@ -74,7 +77,7 @@ app.post('/api/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '7d' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, username: user.username });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -85,7 +88,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/watchlist/add', async (req, res) => {
     const { animeId, token } = req.body;
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id);
 
         if (!user) return res.status(404).json({ message: "User verification failed." });
